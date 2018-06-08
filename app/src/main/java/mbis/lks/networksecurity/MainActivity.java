@@ -3,6 +3,7 @@ package mbis.lks.networksecurity;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 
 
@@ -20,6 +21,10 @@ import java.security.NoSuchAlgorithmException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
+
+import mbis.lks.networksecurity.socket.ConnectToServer;
+import mbis.lks.networksecurity.socket.listener.DataReceiveListener;
+import mbis.lks.networksecurity.socket.listener.DataSendListener;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -51,34 +56,30 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        new SocketSync().execute();
+        try {
 
-    }
+            ConnectToServer server = new ConnectToServer("192.168.107.116", 9999);
+            server.setOnDataSendListener(new DataSendListener() {
+                @Override
+                public void sendData(boolean sendResult) {
+                    Log.e("result", sendResult + "");
+                }
+            });
+            server.setOnDataReceiveListener(new DataReceiveListener() {
+                @Override
+                public void receiveData(String data) {
+                    Log.e("recieved data", data);
+                }
+            });
+            server.send("hello");
+            server.receive();
 
-    private class SocketSync extends AsyncTask<Void, Void, Void>
-    {
-        @Override
-        protected Void doInBackground(Void... voids) {
-
-            try {
-//                Socket socket = new Socket();
-//                InetSocketAddress socketAddress = new InetSocketAddress("192.168.107.116", 9999);
-//                socket.connect(socketAddress);
-
-                Socket socket= new Socket("192.168.107.116", 9999);
-
-                OutputStream output = socket.getOutputStream();
-                InputStream input = socket.getInputStream();
-
-                byte[] data = base.getBytes();
-                output.write(data, 0, data.length);
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-
-            return null;
+        }catch (Exception e)
+        {
+            e.printStackTrace();
         }
+
     }
+
+
 }
