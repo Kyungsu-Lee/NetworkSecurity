@@ -1,6 +1,8 @@
 package mbis.lks.networksecurity.socket;
 
+import android.app.Activity;
 import android.os.AsyncTask;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,11 +18,13 @@ import mbis.lks.networksecurity.socket.listener.DataSendListener;
 
 public class ConnectToServer {
 
+    private Activity mainActivity;
+
     private String  serverHost = "";
     private int     serverPort = 0;
     private Socket  serverSocket;
 
-    private int     bufferSize = 100;
+    private int     bufferSize = 1000;
 
     private InputStream inputStream;
     private OutputStream outputStream;
@@ -29,22 +33,25 @@ public class ConnectToServer {
     private DataSendListener    dataSendListener;
     private DataReceiveListener dataReceiveListener;
 
-    public ConnectToServer(String serverHost, int serverPort) throws IOException
+    public ConnectToServer(Activity activity, String serverHost, int serverPort) throws IOException
     {
+        this.mainActivity = activity;
         this.serverHost = serverHost;
         this.serverPort = serverPort;
 
+//      new ConnectServer().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         new ConnectServer().execute();
     }
 
+
     public void send(String message)
     {
-        new SendDataToServer().execute(message);
+        new SendDataToServer().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, message);
     }
 
     public void receive()
     {
-        new ReceiveFromServer().execute();
+        new ReceiveFromServer().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public void setOnDataSendListener(DataSendListener dataSendListener)
@@ -78,6 +85,17 @@ public class ConnectToServer {
 
             return null;
         }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            if(serverSocket == null || inputStream == null || outputStream == null)
+            {
+                Toast.makeText(mainActivity.getApplicationContext(), "server connection error", Toast.LENGTH_SHORT).show();
+                mainActivity.finish();
+            }
+
+            receive();
+        }
     }
 
     //data send part
@@ -92,7 +110,7 @@ public class ConnectToServer {
 
                 return true;
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 return false;
             }
@@ -132,12 +150,17 @@ public class ConnectToServer {
             }
             catch (Exception e)
             {
+                e.printStackTrace();
                 return null;
             }
         }
 
         @Override
         protected void onPostExecute(String s) {
+
+            if(s == null)
+                return;
+
             if(dataReceiveListener != null)
                 dataReceiveListener.receiveData(s);
         }
