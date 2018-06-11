@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 import java.io.FileOutputStream;
@@ -23,6 +24,7 @@ import java.security.spec.KeySpec;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -71,6 +73,11 @@ public class MainActivity extends AppCompatActivity {
     private DESSecretKey desSecretKey;
     private RSASecretKey rsaSecretKey;
 
+    private String currentNonce = "";
+
+    private HashMap<String, DESSecretKey> DESSessionKey = new HashMap<>();
+    private HashMap<String, AESSecretKey> AESSessionKey = new HashMap<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,8 +92,6 @@ public class MainActivity extends AppCompatActivity {
 
         keyDistributionButton = findViewById(R.id.key_distribution);
 
-        Log.e("time", GenerateTimeStamp.generate());
-        new Example();
 
         //for encryption
         desSecretKey = new DESSecretKey();
@@ -144,40 +149,56 @@ public class MainActivity extends AppCompatActivity {
             sendAESButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    String message = editTextMessage.getText().toString();
-                    JsonParser jsonParser = new JsonParser();
-                    String encryptedText = AESAlgorithm.encrpytedAsBase64(message, aesSecretKey.getKey());
+                    try {
+                        String message = editTextMessage.getText().toString();
+                        JsonParser jsonParser = new JsonParser();
 
-                    jsonParser.add("command", "Send To")
-                            .add("FROM", myUUID)
-                            .add("ID", ((TextView)findViewById(R.id.sendUUID)).getText().toString())
-                            .add("message", encryptedText)
-                            .add("encrypt", "AES")
-                    ;
-                    server.send(jsonParser.toString());
+                        String sendToUserID = ((TextView) findViewById(R.id.sendUUID)).getText().toString();
+                        AESSecretKey key = AESSessionKey.get(sendToUserID);
+                        String encryptedText = AESAlgorithm.encrpytedAsBase64(message, key.getKey());
+
+                        jsonParser.add("command", "Send To")
+                                .add("FROM", myUUID)
+                                .add("ID", sendToUserID)
+                                .add("message", encryptedText)
+                                .add("encrypt", "AES")
+                        ;
+                        server.send(jsonParser.toString());
 
 
-                    editTextMessage.setText("");
+                        editTextMessage.setText("");
+                    }catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
                 }
             });
 
             sendDESButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    String message = editTextMessage.getText().toString();
-                    JsonParser jsonParser = new JsonParser();
-                    String encryptedText = DESAlgorithm.encrpytedAsBase64(message, desSecretKey.getKey());
+                    try {
+                        String message = editTextMessage.getText().toString();
+                        JsonParser jsonParser = new JsonParser();
 
-                    jsonParser.add("command", "Send To")
-                            .add("FROM", myUUID)
-                            .add("ID", ((TextView)findViewById(R.id.sendUUID)).getText().toString())
-                            .add("message", encryptedText)
-                            .add("encrypt", "DES")
-                    ;
-                    server.send(jsonParser.toString());
+                        String sendToUserID = ((TextView) findViewById(R.id.sendUUID)).getText().toString();
+                        DESSecretKey key = DESSessionKey.get(sendToUserID);
+                        String encryptedText = DESAlgorithm.encrpytedAsBase64(message, key.getKey());
+
+                        jsonParser.add("command", "Send To")
+                                .add("FROM", myUUID)
+                                .add("ID", sendToUserID)
+                                .add("message", encryptedText)
+                                .add("encrypt", "DES")
+                        ;
+                        server.send(jsonParser.toString());
 
 
-                    editTextMessage.setText("");
+                        editTextMessage.setText("");
+                    }catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
                 }
             });
 
@@ -187,20 +208,16 @@ public class MainActivity extends AppCompatActivity {
 
                     try {
 
-                        RSASecretKey key = RSASecretKey.setPublicKey(rsaSecretKey.getPublicKeyMod(), rsaSecretKey.getPublicKeyExp());
-                        Log.e("key", key.getPublicKeyAsString());
-                        Log.e("origin", rsaSecretKey.getPublicKeyAsString());
+                        currentNonce = GenerateTimeStamp.generate();
 
-                        String send = new JsonParser()
-                                .add("command", "Test")
-                                .add("key mod", rsaSecretKey.getPublicKeyMod())
-                                .add("key exp", rsaSecretKey.getPublicKeyExp())
-                                .add("ID", myUUID)
-                                .toString();
                         server.send(
-                                send
+                                new JsonParser()
+                                        .add("command", "KDC1")
+                                        .add("From", myUUID)
+                                        .add("To", ((TextView)findViewById(R.id.sendUUID)).getText().toString())
+                                        .add("Nonce", currentNonce)
+                                        .toString()
                         );
-                        Log.e("send", send);
                     }catch (Exception e)
                     {
                         e.printStackTrace();
@@ -313,13 +330,23 @@ public class MainActivity extends AppCompatActivity {
                 else if(encrpytionMethod.equals("AES"))
                 {
                     String encryptedText = jsonParser.get("message");
-                    decryptedText = AESAlgorithm.decryptBase64AsString(encryptedText, aesSecretKey.getKey());
+                    String userFrom = jsonParser.get("FROM");
+
+                    AESSecretKey key = AESSessionKey.get(userFrom);
+
+                    decryptedText = AESAlgorithm.decryptBase64AsString(encryptedText, key.getKey());
                 }
 
                 else if(encrpytionMethod.equals("DES"))
                 {
+                    Log.e("message", message);
                     String encryptedText = jsonParser.get("message");
-                    decryptedText = DESAlgorithm.decryptBase64AsString(encryptedText, desSecretKey.getKey());
+                    String userFrom = jsonParser.get("FROM");
+
+                    DESSecretKey key = DESSessionKey.get(userFrom);
+
+                    Log.e("key", key.toString());
+                    decryptedText = DESAlgorithm.decryptBase64AsString(encryptedText, key.getKey());
                 }
 
                 textView.setText(decryptedText);
@@ -338,44 +365,67 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("send key", rsaSecretKey.getPublicKeyAsString());
             }
 
+            if(parser.get("command").equals("KDC2"))
+            {
+
+                Log.e("message", message);
+
+                String nonce = RSAAlgorithm.decryptBase64AsString(parser.get("user1 Nonce"), rsaSecretKey.getPrivateKey());
+
+                if(!nonce.equals(currentNonce))
+                {
+                    Toast.makeText(getApplicationContext(), "Wrong Access", Toast.LENGTH_SHORT);
+                    return;
+                }
+
+                String fromKDC = parser.get("user1 session key des");
+                String fromAES = parser.get("user1 session key aes");
+
+                String userTo = RSAAlgorithm.decryptBase64AsString(parser.get("user1 To"), rsaSecretKey.getPrivateKey());
+
+                String deString = RSAAlgorithm.decryptBase64AsString(fromKDC, rsaSecretKey.getPrivateKey());
+                String aeString = RSAAlgorithm.decryptBase64AsString(fromAES, rsaSecretKey.getPrivateKey());
+
+                DESSessionKey.put(userTo, DESSecretKey.generateKeyFromBase64(deString));
+                AESSessionKey.put(userTo, AESSecretKey.generateKeyFromBase64(aeString));
+
+                Log.e("de", userTo);
+                Log.e("key", DESSecretKey.generateKeyFromBase64(deString).toString());
+
+                server.send(
+                        new JsonParser()
+                                .add("command", "KDC3")
+                                .add("To", userTo)
+                                .add("user2 session key des", parser.get("user2 session key des"))
+                                .add("user2 session key aes", parser.get("user2 session key aes"))
+                                .add("user2 From", parser.get("user2 From"))
+                                .toString()
+                );
+            }
+
+            if(parser.get("command").equals("KDC3"))
+            {
+                Log.e("message", message);
+
+                String fromUser = RSAAlgorithm.decryptBase64AsString(parser.get("user2 From"), rsaSecretKey.getPrivateKey());
+                String sessionKeyDES = RSAAlgorithm.decryptBase64AsString(parser.get("user2 session key des"), rsaSecretKey.getPrivateKey());
+                String sessionKeyAES = RSAAlgorithm.decryptBase64AsString(parser.get("user2 session key aes"), rsaSecretKey.getPrivateKey());
+
+                DESSessionKey.put(fromUser, DESSecretKey.generateKeyFromBase64(sessionKeyDES));
+                AESSessionKey.put(fromUser, AESSecretKey.generateKeyFromBase64(sessionKeyAES));
+            }
+
             //test
             if(parser.get("command").equals("Test"))
             {
-                JsonParser jsonParser = JsonParser.parse(message);
-                Log.e("message", jsonParser.get("message"));
 
-                RSASecretKey publicKey = RSASecretKey.setPublicKey(parser.get("key mod"), parser.get("key exp"));
-//
-                String en = RSAAlgorithm.encrpytedAsBase64("hello world", publicKey.getPublicKey());
-
-//
-//                String de = RSAAlgorithm.decryptBase64AsString(jsonParser.get("message"), rsaSecretKey.getPrivateKey());
-
-//                Log.e("public", rsaSecretKey.getPublicKeyAsString());
-                Log.e("en", en);
-                Log.e("de", RSAAlgorithm.decryptBase64AsString(en, rsaSecretKey.getPrivateKey()));
-//                Log.e("len ", en.length() + "");
-//                Log.e("message", de);
-
-
-                RSASecretKey key = RSASecretKey.setPublicKey(rsaSecretKey.getPublicKeyMod(), rsaSecretKey.getPublicKeyExp());
-                en = RSAAlgorithm.encrpytedAsBase64("hello world", key.getPublicKey());
-                Log.e("en", en);
-                Log.e("de", RSAAlgorithm.decryptBase64AsString(en, rsaSecretKey.getPrivateKey()));
-
-                en = RSAAlgorithm.encrpytedAsBase64("hello world", rsaSecretKey.getPublicKey());
-                Log.e("en", en);
-                Log.e("de", RSAAlgorithm.decryptBase64AsString(en, rsaSecretKey.getPrivateKey()));
-
-                en = jsonParser.get("en");
-                Log.e("en", en);
-                Log.e("de", RSAAlgorithm.decryptBase64AsString(en, rsaSecretKey.getPrivateKey()));
 
             }
 
         }
         catch (Exception e)
         {
+            e.printStackTrace();
             textView.setText(message);
             Log.e("message", "not a json");
         }

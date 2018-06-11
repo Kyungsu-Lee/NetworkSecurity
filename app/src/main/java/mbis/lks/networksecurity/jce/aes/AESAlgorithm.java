@@ -5,9 +5,6 @@ import android.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 
-/**
- * Created by lmasi on 2018. 6. 10..
- */
 
 public class AESAlgorithm {
 

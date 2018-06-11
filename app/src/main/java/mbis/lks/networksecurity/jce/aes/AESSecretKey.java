@@ -8,9 +8,6 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-/**
- * Created by lmasi on 2018. 6. 10..
- */
 
 public class AESSecretKey {
 
