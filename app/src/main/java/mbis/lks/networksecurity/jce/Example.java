@@ -1,15 +1,24 @@
 package mbis.lks.networksecurity.jce;
 
+import android.security.keystore.KeyGenParameterSpec;
 import android.util.Base64;
 import android.util.Log;
 
+import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.Key;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.RSAKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -32,62 +41,73 @@ public class Example {
 
     public Example()
     {
-//        try{
-//
-//            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-//            keyPairGenerator.initialize(1024);
-//            KeyPair keyPair = keyPairGenerator.generateKeyPair();
-//
-//            PublicKey publicKey = keyPair.getPublic();
-//            PrivateKey privateKey = keyPair.getPrivate();
-//
-//
-//            Cipher desCipher;
-//
-//            // Create the cipher
-//            desCipher = Cipher.getInstance("RSA");
-//
-//            // Initialize the cipher for encryption
-//            desCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-//
-//            //sensitive information
-//            byte[] text = "helmjjjjklo World".getBytes();
-//
-//            Log.e("original text to byte", "Text [Byte Format] : " + text);
-//            Log.e("original text", "Text : " + new String(text));
-//
-//            // Encrypt the text
-//            byte[] textEncrypted = desCipher.doFinal(text);
-//
-//            Log.e("encrypted byte", "Text Encryted : " + textEncrypted);
-//            Log.e("encrypted text", "Text : " + new String(textEncrypted));
-//
-//            String base = Base64.encodeToString(textEncrypted, Base64.NO_WRAP);
-//            Log.e("base", base);
-//
-//            byte[] b = Base64.decode(base, Base64.NO_WRAP);
-//
-//            // Initialize the same cipher for decryption
-//            desCipher.init(Cipher.DECRYPT_MODE, privateKey);
-//
-//            // Decrypt the text
-//            byte[] textDecrypted = desCipher.doFinal(b);
-//
-//            Log.e("decrypted text", "Text Decryted : " + new String(textDecrypted));
-//
-//        }
-//        catch (NoSuchAlgorithmException e)
-//        {
-//            e.printStackTrace();
-//        } catch (BadPaddingException e) {
-//            e.printStackTrace();
-//        } catch (IllegalBlockSizeException e) {
-//            e.printStackTrace();
-//        } catch (NoSuchPaddingException e) {
-//            e.printStackTrace();
-//        } catch (InvalidKeyException e) {
-//            e.printStackTrace();
-//        }
+        try{
+
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(1024);
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+
+            RSAPublicKey publicKey = (RSAPublicKey)keyPair.getPublic();
+            RSAPrivateKey privateKey = (RSAPrivateKey)keyPair.getPrivate();
+
+            Log.e("public", publicKey.getPublicExponent() +"");
+            Log.e("publics", publicKey.getModulus() +"");
+
+            RSAPublicKeySpec rsaPublicKeySpec = new RSAPublicKeySpec(publicKey.getModulus(), publicKey.getPublicExponent());
+            KeyFactory factory = KeyFactory.getInstance("RSA");
+            RSAPublicKey publicKey1 = (RSAPublicKey)factory.generatePublic(rsaPublicKeySpec);
+
+            RSAPrivateKeySpec rsaPrivateKeySpec = new RSAPrivateKeySpec(privateKey.getModulus(), privateKey.getPrivateExponent());
+            RSAPrivateKey privateKey1 = (RSAPrivateKey)factory.generatePrivate(rsaPrivateKeySpec);
+
+            Cipher desCipher;
+
+            // Create the cipher
+            desCipher = Cipher.getInstance("RSA");
+
+            // Initialize the cipher for encryption
+            desCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+
+            //sensitive information
+            byte[] text = "l World".getBytes();
+
+            Log.e("original text to byte", "Text [Byte Format] : " + text);
+            Log.e("original text", "Text : " + new String(text));
+
+            // Encrypt the text
+            byte[] textEncrypted = desCipher.doFinal(text);
+
+            Log.e("encrypted byte", "Text Encryted : " + textEncrypted);
+            Log.e("encrypted text", "Text : " + new String(textEncrypted));
+
+            String base = Base64.encodeToString(textEncrypted, Base64.NO_WRAP);
+            Log.e("base", base);
+
+            byte[] b = Base64.decode(base, Base64.NO_WRAP);
+
+            // Initialize the same cipher for decryption
+            desCipher.init(Cipher.DECRYPT_MODE, privateKey1);
+
+            // Decrypt the text
+            byte[] textDecrypted = desCipher.doFinal(b);
+
+            Log.e("decrypted text", "Text Decryted : " + new String(textDecrypted));
+
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
 //
 //        DESSecretKey secretKey = new DESSecretKey();
 //        String message = "hello world";
@@ -102,6 +122,8 @@ public class Example {
 //        Log.e("encrypted", encryptedText);
 //        String decryptedText = RSAAlgorithm.decryptBase64AsString(encryptedText, rsaSecretKey.getPrivateKey());
 //        Log.e("decrypted", decryptedText);
+
+
 
 
     }

@@ -19,9 +19,13 @@ import java.io.ObjectOutputStream;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
+import java.security.spec.KeySpec;
+import java.security.spec.RSAKeyGenParameterSpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import mbis.lks.networksecurity.jce.Example;
 import mbis.lks.networksecurity.jce.GenerateTimeStamp;
@@ -29,8 +33,11 @@ import mbis.lks.networksecurity.jce.aes.AESAlgorithm;
 import mbis.lks.networksecurity.jce.aes.AESSecretKey;
 import mbis.lks.networksecurity.jce.des.DESAlgorithm;
 import mbis.lks.networksecurity.jce.des.DESSecretKey;
-import mbis.lks.networksecurity.jce.rsa.RSAAlgorithm;
-import mbis.lks.networksecurity.jce.rsa.RSASecretKey;
+
+//import mbis.lks.networksecurity.jce.rsa.RSAAlgorithm;
+//import mbis.lks.networksecurity.jce.rsa.RSASecretKey;
+import jce.rsa.*;
+
 import mbis.lks.networksecurity.json.JsonParser;
 import mbis.lks.networksecurity.socket.ConnectToServer;
 import mbis.lks.networksecurity.socket.listener.DataReceiveListener;
@@ -79,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         keyDistributionButton = findViewById(R.id.key_distribution);
 
         Log.e("time", GenerateTimeStamp.generate());
+        new Example();
 
         //for encryption
         desSecretKey = new DESSecretKey();
@@ -177,27 +185,26 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
 
-                    RSASecretKey str = rsaSecretKey;
-                    RSASecretKey restore = (RSASecretKey)ObjectByteStream.toObject(Base64.decode(Base64.encodeToString(ObjectByteStream.toByteArray(str), Base64.NO_WRAP), Base64.NO_WRAP));
+                    try {
 
-                    Log.e("restore", str.toPublicKey2String());
-                    Log.e("restore", restore.toPublicKey2String());
+                        RSASecretKey key = RSASecretKey.setPublicKey(rsaSecretKey.getPublicKeyMod(), rsaSecretKey.getPublicKeyExp());
+                        Log.e("key", key.getPublicKeyAsString());
+                        Log.e("origin", rsaSecretKey.getPublicKeyAsString());
 
-                    String en = RSAAlgorithm.encrpytedAsBase64("hello", str.getPublicKey());
-                    String de = RSAAlgorithm.decryptBase64AsString(en, restore.getPrivateKey());
-
-                    Log.e("de", de);
-
-                    String key = Base64.encodeToString(ObjectByteStream.toByteArray(str), Base64.NO_WRAP);
-                    String send = new JsonParser()
-                            .add("command", "Test")
-                            .add("key", key)
-                            .add("ID", myUUID)
-                            .toString();
-                    server.send(
-                            send
-                    );
-                    Log.e("send", send);
+                        String send = new JsonParser()
+                                .add("command", "Test")
+                                .add("key mod", rsaSecretKey.getPublicKeyMod())
+                                .add("key exp", rsaSecretKey.getPublicKeyExp())
+                                .add("ID", myUUID)
+                                .toString();
+                        server.send(
+                                send
+                        );
+                        Log.e("send", send);
+                    }catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
                 }
             });
 
@@ -298,12 +305,9 @@ public class MainActivity extends AppCompatActivity {
 
                 if(encrpytionMethod.equals("RSA"))
                 {
+
                     String encryptedText = jsonParser.get("message");
-                    Log.e("ss", rsaSecretKey.toPrivateKey2String());
-                    Log.e("length", rsaSecretKey.toPrivateKey2String().length()+"");
-                    Log.e("message", jsonParser.get("message"));
-                    RSASecretKey key = RSASecretKey.setPrivateKey(rsaSecretKey.toPrivateKey2String());
-                    decryptedText = RSAAlgorithm.decryptBase64AsString(encryptedText, key.getPrivateKey());
+                    decryptedText = RSAAlgorithm.decryptBase64AsString(encryptedText, rsaSecretKey.getPrivateKey());
                 }
 
                 else if(encrpytionMethod.equals("AES"))
@@ -327,29 +331,46 @@ public class MainActivity extends AppCompatActivity {
                 server.send(new JsonParser()
                         .add("command", "Request Key")
                         .add("ID", myUUID)
-                        .add("key", rsaSecretKey.toPublicKey2String())
+                        .add("key mod", rsaSecretKey.getPublicKeyMod())
+                        .add("key exp", rsaSecretKey.getPublicKeyExp())
                         .toString()
                 );
-                Log.e("send key", rsaSecretKey.toPublicKey2String());
+                Log.e("send key", rsaSecretKey.getPublicKeyAsString());
             }
 
             //test
             if(parser.get("command").equals("Test"))
             {
                 JsonParser jsonParser = JsonParser.parse(message);
+                Log.e("message", jsonParser.get("message"));
 
-                String en = jsonParser.get("message");
+                RSASecretKey publicKey = RSASecretKey.setPublicKey(parser.get("key mod"), parser.get("key exp"));
+//
+                String en = RSAAlgorithm.encrpytedAsBase64("hello world", publicKey.getPublicKey());
 
-                String de = RSAAlgorithm.decryptBase64AsString(en, rsaSecretKey.getPrivateKey());
+//
+//                String de = RSAAlgorithm.decryptBase64AsString(jsonParser.get("message"), rsaSecretKey.getPrivateKey());
 
-                Log.e("public", rsaSecretKey.toPublicKey2String());
+//                Log.e("public", rsaSecretKey.getPublicKeyAsString());
                 Log.e("en", en);
-                Log.e("message", de);
+                Log.e("de", RSAAlgorithm.decryptBase64AsString(en, rsaSecretKey.getPrivateKey()));
+//                Log.e("len ", en.length() + "");
+//                Log.e("message", de);
 
-                 de = RSAAlgorithm.decryptBase64AsString(en.trim(), rsaSecretKey.getPrivateKey());
 
+                RSASecretKey key = RSASecretKey.setPublicKey(rsaSecretKey.getPublicKeyMod(), rsaSecretKey.getPublicKeyExp());
+                en = RSAAlgorithm.encrpytedAsBase64("hello world", key.getPublicKey());
                 Log.e("en", en);
-                Log.e("message", de);
+                Log.e("de", RSAAlgorithm.decryptBase64AsString(en, rsaSecretKey.getPrivateKey()));
+
+                en = RSAAlgorithm.encrpytedAsBase64("hello world", rsaSecretKey.getPublicKey());
+                Log.e("en", en);
+                Log.e("de", RSAAlgorithm.decryptBase64AsString(en, rsaSecretKey.getPrivateKey()));
+
+                en = jsonParser.get("en");
+                Log.e("en", en);
+                Log.e("de", RSAAlgorithm.decryptBase64AsString(en, rsaSecretKey.getPrivateKey()));
+
             }
 
         }

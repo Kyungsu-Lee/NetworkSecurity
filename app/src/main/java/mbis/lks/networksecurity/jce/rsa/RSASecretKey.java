@@ -3,19 +3,18 @@ package mbis.lks.networksecurity.jce.rsa;
 import android.util.Base64;
 
 import java.io.Serializable;
+import java.math.BigInteger;
+
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.spec.KeySpec;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 
 /**
  * Created by lmasi on 2018. 6. 10..
@@ -24,8 +23,8 @@ import javax.crypto.spec.SecretKeySpec;
 public class RSASecretKey implements Serializable{
 
 //    private SecretKey key;
-    private PublicKey publicKey;
-    private PrivateKey privateKey;
+    private RSAPublicKey publicKey;
+    private RSAPrivateKey privateKey;
 
     public RSASecretKey() {
         try
@@ -34,8 +33,8 @@ public class RSASecretKey implements Serializable{
             keyPairGenerator.initialize(1024);
             KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
-            this.publicKey = keyPair.getPublic();
-            this.privateKey = keyPair.getPrivate();
+            this.publicKey = (RSAPublicKey)keyPair.getPublic();
+            this.privateKey = (RSAPrivateKey)keyPair.getPrivate();
         }
         catch (NoSuchAlgorithmException e)
         {
@@ -43,13 +42,13 @@ public class RSASecretKey implements Serializable{
         }
     }
 
-    public RSASecretKey setPublicKey(PublicKey key)
+    public RSASecretKey setPublicKey(RSAPublicKey key)
     {
 
         this.publicKey = key;
         return this;
     }
-    public RSASecretKey setPrivateKey(PrivateKey key)
+    public RSASecretKey setPrivateKey(RSAPrivateKey key)
     {
 
         this.privateKey = key;
@@ -57,24 +56,25 @@ public class RSASecretKey implements Serializable{
     }
 
 
-    public PublicKey getPublicKey()
+    public RSAPublicKey getPublicKey()
     {
         return this.publicKey;
     }
 
-    public PrivateKey getPrivateKey()
+    public RSAPrivateKey getPrivateKey()
     {
         return this.privateKey;
     }
 
-    public static RSASecretKey setPrivateKey(String key)
+    public static RSASecretKey setPrivateKey(String module, String exponent)
     {
         try
         {
-            byte[] tmp_private = Base64.decode(key, Base64.NO_WRAP);
+            BigInteger mod = new BigInteger(module);
+            BigInteger exp = new BigInteger(exponent);
 
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PrivateKey privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(tmp_private));
+            RSAPrivateKey privateKey = (RSAPrivateKey)keyFactory.generatePrivate(new RSAPrivateKeySpec(mod, exp));
 
             return new RSASecretKey().setPrivateKey(privateKey);
         }
@@ -85,14 +85,15 @@ public class RSASecretKey implements Serializable{
         }
     }
 
-    public static RSASecretKey setPublicKey(String key)
+    public static RSASecretKey setPublicKey(String module, String exponent)
     {
         try
         {
-            byte[] tmp_private = Base64.decode(key, Base64.NO_WRAP);
+            BigInteger mod = new BigInteger(module);
+            BigInteger exp = new BigInteger(exponent);
 
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PublicKey privateKey = keyFactory.generatePublic(new X509EncodedKeySpec(tmp_private));
+            RSAPublicKey privateKey = (RSAPublicKey)keyFactory.generatePublic(new RSAPublicKeySpec(mod, exp));
 
             return new RSASecretKey().setPublicKey(privateKey);
         }
@@ -104,34 +105,32 @@ public class RSASecretKey implements Serializable{
     }
 
 
-    public static RSASecretKey generatePublicKeyFromBase64(String base64PublicKey, String base64PrivateKey)
+    public String getPublicKeyMod()
     {
-        try {
-
-            byte[] tmp_public = Base64.decode(base64PublicKey, Base64.NO_WRAP);
-            byte[] tmp_private = Base64.decode(base64PrivateKey, Base64.NO_WRAP);
-
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-
-            PublicKey publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(tmp_public));
-            PrivateKey privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(tmp_private));
-
-
-            return new RSASecretKey().setPublicKey(publicKey).setPrivateKey(privateKey);
-
-        }catch (Exception e)
-        {
-            e.printStackTrace();
-            return null;
-        }
+        return publicKey.getModulus().toString();
     }
 
-    public String toPublicKey2String()
+    public String getPublicKeyExp()
+    {
+        return publicKey.getPublicExponent().toString();
+    }
+
+    public String getPrivateKeyMod()
+    {
+        return privateKey.getModulus().toString();
+    }
+
+    public String getPrivateKeyExp()
+    {
+        return privateKey.getPrivateExponent().toString();
+    }
+
+    public String getPublicKeyAsString()
     {
         return Base64.encodeToString(publicKey.getEncoded(), Base64.NO_WRAP);
     }
 
-    public String toPrivateKey2String()
+    public String getPrivateKeyAsString()
     {
         return Base64.encodeToString(privateKey.getEncoded(), Base64.NO_WRAP);
     }
