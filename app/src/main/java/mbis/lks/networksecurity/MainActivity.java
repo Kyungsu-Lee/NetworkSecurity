@@ -2,6 +2,7 @@ package mbis.lks.networksecurity;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -13,6 +14,11 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.interfaces.RSAKey;
 import java.util.ArrayList;
 
 import javax.crypto.SecretKey;
@@ -30,9 +36,13 @@ import mbis.lks.networksecurity.socket.ConnectToServer;
 import mbis.lks.networksecurity.socket.listener.DataReceiveListener;
 import mbis.lks.networksecurity.socket.listener.DataSendListener;
 import mbis.lks.networksecurity.util.ListViewAdaptor;
+import mbis.lks.networksecurity.util.ObjectByteStream;
 import mbis.lks.networksecurity.util.UserIDItem;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final String SERVER_URL = "192.168.107.116";
+    private static final int    SERVER_PORT = 9999;
 
     String base;
     TextView textView;
@@ -41,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     Button sendRSAButton;
     Button sendDESButton;
     Button sendAESButton;
+    Button keyDistributionButton;
 
     ConnectToServer server;
 
@@ -65,6 +76,8 @@ public class MainActivity extends AppCompatActivity {
         sendDESButton = findViewById(R.id.sendButtonwithDES);
         sendAESButton = findViewById(R.id.sendButtonwithAES);
 
+        keyDistributionButton = findViewById(R.id.key_distribution);
+
         Log.e("time", GenerateTimeStamp.generate());
 
         //for encryption
@@ -74,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
 
         try {
 
-            server = new ConnectToServer(this, "192.168.107.116", 9999);
+            server = new ConnectToServer(this, SERVER_URL, SERVER_PORT);
             server.setOnDataSendListener(new DataSendListener() {
                 @Override
                 public void sendData(boolean sendResult) {
@@ -89,7 +102,6 @@ public class MainActivity extends AppCompatActivity {
                         Log.e("aa", "aa");
                         server.send(new JsonParser().add("command", "Request ID").toString());
                     }
-
                 }
             });
             server.setOnDataReceiveListener(new DataReceiveListener() {
@@ -158,6 +170,34 @@ public class MainActivity extends AppCompatActivity {
 
 
                     editTextMessage.setText("");
+                }
+            });
+
+            keyDistributionButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                    RSASecretKey str = rsaSecretKey;
+                    RSASecretKey restore = (RSASecretKey)ObjectByteStream.toObject(Base64.decode(Base64.encodeToString(ObjectByteStream.toByteArray(str), Base64.NO_WRAP), Base64.NO_WRAP));
+
+                    Log.e("restore", str.toPublicKey2String());
+                    Log.e("restore", restore.toPublicKey2String());
+
+                    String en = RSAAlgorithm.encrpytedAsBase64("hello", str.getPublicKey());
+                    String de = RSAAlgorithm.decryptBase64AsString(en, restore.getPrivateKey());
+
+                    Log.e("de", de);
+
+                    String key = Base64.encodeToString(ObjectByteStream.toByteArray(str), Base64.NO_WRAP);
+                    String send = new JsonParser()
+                            .add("command", "Test")
+                            .add("key", key)
+                            .add("ID", myUUID)
+                            .toString();
+                    server.send(
+                            send
+                    );
+                    Log.e("send", send);
                 }
             });
 
@@ -259,7 +299,11 @@ public class MainActivity extends AppCompatActivity {
                 if(encrpytionMethod.equals("RSA"))
                 {
                     String encryptedText = jsonParser.get("message");
-                    decryptedText = RSAAlgorithm.decryptBase64AsString(encryptedText, rsaSecretKey.getPrivateKey());
+                    Log.e("ss", rsaSecretKey.toPrivateKey2String());
+                    Log.e("length", rsaSecretKey.toPrivateKey2String().length()+"");
+                    Log.e("message", jsonParser.get("message"));
+                    RSASecretKey key = RSASecretKey.setPrivateKey(rsaSecretKey.toPrivateKey2String());
+                    decryptedText = RSAAlgorithm.decryptBase64AsString(encryptedText, key.getPrivateKey());
                 }
 
                 else if(encrpytionMethod.equals("AES"))
@@ -283,11 +327,31 @@ public class MainActivity extends AppCompatActivity {
                 server.send(new JsonParser()
                         .add("command", "Request Key")
                         .add("ID", myUUID)
-                        .add("key", desSecretKey.toString())
+                        .add("key", rsaSecretKey.toPublicKey2String())
                         .toString()
                 );
-                Log.e("send key", desSecretKey.toString());
+                Log.e("send key", rsaSecretKey.toPublicKey2String());
             }
+
+            //test
+            if(parser.get("command").equals("Test"))
+            {
+                JsonParser jsonParser = JsonParser.parse(message);
+
+                String en = jsonParser.get("message");
+
+                String de = RSAAlgorithm.decryptBase64AsString(en, rsaSecretKey.getPrivateKey());
+
+                Log.e("public", rsaSecretKey.toPublicKey2String());
+                Log.e("en", en);
+                Log.e("message", de);
+
+                 de = RSAAlgorithm.decryptBase64AsString(en.trim(), rsaSecretKey.getPrivateKey());
+
+                Log.e("en", en);
+                Log.e("message", de);
+            }
+
         }
         catch (Exception e)
         {

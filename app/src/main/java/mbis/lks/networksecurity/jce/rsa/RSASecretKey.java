@@ -2,6 +2,7 @@ package mbis.lks.networksecurity.jce.rsa;
 
 import android.util.Base64;
 
+import java.io.Serializable;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -20,7 +21,7 @@ import javax.crypto.spec.SecretKeySpec;
  * Created by lmasi on 2018. 6. 10..
  */
 
-public class RSASecretKey {
+public class RSASecretKey implements Serializable{
 
 //    private SecretKey key;
     private PublicKey publicKey;
@@ -66,13 +67,49 @@ public class RSASecretKey {
         return this.privateKey;
     }
 
+    public static RSASecretKey setPrivateKey(String key)
+    {
+        try
+        {
+            byte[] tmp_private = Base64.decode(key, Base64.NO_WRAP);
+
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            PrivateKey privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(tmp_private));
+
+            return new RSASecretKey().setPrivateKey(privateKey);
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static RSASecretKey setPublicKey(String key)
+    {
+        try
+        {
+            byte[] tmp_private = Base64.decode(key, Base64.NO_WRAP);
+
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            PublicKey privateKey = keyFactory.generatePublic(new X509EncodedKeySpec(tmp_private));
+
+            return new RSASecretKey().setPublicKey(privateKey);
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
     public static RSASecretKey generatePublicKeyFromBase64(String base64PublicKey, String base64PrivateKey)
     {
         try {
 
-            byte[] tmp_public = Base64.decode(base64PublicKey, Base64.DEFAULT);
-            byte[] tmp_private = Base64.decode(base64PrivateKey, Base64.DEFAULT);
+            byte[] tmp_public = Base64.decode(base64PublicKey, Base64.NO_WRAP);
+            byte[] tmp_private = Base64.decode(base64PrivateKey, Base64.NO_WRAP);
 
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 
@@ -91,12 +128,12 @@ public class RSASecretKey {
 
     public String toPublicKey2String()
     {
-        return Base64.encodeToString(publicKey.getEncoded(), Base64.DEFAULT);
+        return Base64.encodeToString(publicKey.getEncoded(), Base64.NO_WRAP);
     }
 
     public String toPrivateKey2String()
     {
-        return Base64.encodeToString(privateKey.getEncoded(), Base64.DEFAULT);
+        return Base64.encodeToString(privateKey.getEncoded(), Base64.NO_WRAP);
     }
 
 }
