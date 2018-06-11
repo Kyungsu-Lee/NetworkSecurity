@@ -24,7 +24,7 @@ public class ConnectToServer {
     private int     serverPort = 0;
     private Socket  serverSocket;
 
-    private int     bufferSize = 1000;
+    private int     bufferSize = 20000;
 
     private InputStream inputStream;
     private OutputStream outputStream;

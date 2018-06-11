@@ -55,39 +55,94 @@
         android:layout_marginRight="20dp"
         />
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:layout_below="@id/edit_text_message"
-        android:layout_centerHorizontal="true"
-        android:text="send"
-        android:id="@+id/sendButton"
-        />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:layout_below="@id/sendButton"
-        android:layout_centerHorizontal="true"
-        android:text="request"
-        android:id="@+id/requestButton"
-        />
-
-    <ListView
-        android:layout_height="100dp"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_below="@id/requestButton"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/edit_text_message"
+        android:layout_marginTop="30dp"
+        android:layout_centerHorizontal="true"
+        android:id="@+id/sendButtons"
+        android:gravity="center"
+        android:dividerPadding="2dp"
+        >
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="send RSA"
+            android:id="@+id/sendButtonwithRSA"
+            android:layout_weight="1"
+            />
+
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="send AES"
+            android:id="@+id/sendButtonwithAES"
+            android:layout_weight="1"
+            />
+
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="send DES"
+            android:id="@+id/sendButtonwithDES"
+            android:layout_weight="1"
+            />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/key_distribution_buttons"
+        android:layout_below="@id/sendButtons"
+        android:layout_marginTop="5dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:layout_centerHorizontal="true"
+        android:dividerPadding="2dp"
+        >
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/key_distribution"
+            android:text="key distribution"
+            android:layout_weight="1"
+            />
+
+
+    </LinearLayout>
+
+
+    <!--<Button-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_marginTop="30dp"-->
+        <!--android:layout_below="@id/sendButton"-->
+        <!--android:layout_centerHorizontal="true"-->
+        <!--android:text="request"-->
+        <!--android:id="@+id/requestButton"-->
+        <!--/>-->
+
+
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinner"
+        android:layout_below="@id/key_distribution_buttons"
         android:layout_marginTop="50dp"
-        android:id="@+id/listView"
-        android:choiceMode="singleChoice"
-        android:dividerHeight="1.5dp"
-    />
+        >
+
+
+    </Spinner>
 
     <TextView
         android:id="@+id/sendUUIDLabel"
-        android:layout_below="@id/listView"
+        android:layout_below="@id/spinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
