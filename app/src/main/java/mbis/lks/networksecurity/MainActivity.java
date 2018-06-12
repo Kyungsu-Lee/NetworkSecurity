@@ -92,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
         keyDistributionButton = findViewById(R.id.key_distribution);
 
+        new Example();
 
         //for encryption
         desSecretKey = new DESSecretKey();
@@ -401,6 +402,8 @@ public class MainActivity extends AppCompatActivity {
                                 .add("user2 From", parser.get("user2 From"))
                                 .toString()
                 );
+
+                Toast.makeText(getApplicationContext(), "Key generated", Toast.LENGTH_SHORT).show();
             }
 
             if(parser.get("command").equals("KDC3"))
@@ -413,6 +416,8 @@ public class MainActivity extends AppCompatActivity {
 
                 DESSessionKey.put(fromUser, DESSecretKey.generateKeyFromBase64(sessionKeyDES));
                 AESSessionKey.put(fromUser, AESSecretKey.generateKeyFromBase64(sessionKeyAES));
+
+                Toast.makeText(getApplicationContext(), "Key generated", Toast.LENGTH_SHORT).show();
             }
 
             //test
